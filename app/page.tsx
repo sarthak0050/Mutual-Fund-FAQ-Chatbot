@@ -1,69 +1,211 @@
-import Image from "next/image";
+"use client";
+
+import { useState } from "react";
+
+type QueryResponse = {
+  type: string;
+  answer?: string;
+  source_url?: string;
+  last_updated?: string | null;
+  fact_type?: string;
+  scheme_id?: string;
+  message?: string;
+  scheme_name?: string;
+};
+
+const SCHEMES = [
+  { id: "top100", name: "HDFC Top 100 Fund" },
+  { id: "flexicap", name: "HDFC Flexi Cap Fund" },
+  { id: "elsstaxsaver", name: "HDFC ELSS Tax Saver" },
+  { id: "midcap", name: "HDFC Mid-Cap Opportunities Fund" },
+];
+
+const EXAMPLES = [
+  "What is the expense ratio of HDFC Flexi Cap Fund?",
+  "ELSS lock-in period?",
+  "Who manages HDFC Mid-Cap Opportunities Fund?",
+];
 
 export default function Home() {
+  const [query, setQuery] = useState("");
+  const [response, setResponse] = useState<QueryResponse | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!query.trim()) return;
+
+    setLoading(true);
+    setResponse(null);
+
+    try {
+      const res = await fetch("/api/query", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: query }),
+      });
+      const data = await res.json();
+      setResponse(data);
+    } catch {
+      setResponse({ type: "error", message: "Something went wrong. Please try again." });
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function handleExample(example: string) {
+    setQuery(example);
+    setResponse(null);
+  }
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div className="min-h-screen bg-[#FAFAF8] text-[#1A1A1A]">
+      {/* Persistent header */}
+      <header className="border-b border-[#E5E5E3] bg-[#FAFAF8] px-4 py-4 sticky top-0 z-10">
+        <div className="mx-auto max-w-[640px]">
+          <h1 className="text-lg font-medium tracking-tight">MF-Facts</h1>
+          <p className="text-sm text-[#6B6B6B]">Facts-only. No investment advice.</p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
+      </header>
+
+      <main className="mx-auto max-w-[640px] px-4 py-8">
+        {/* Welcome */}
+        <section className="mb-8">
+          <p className="mb-3 text-sm text-[#6B6B6B]">Covering these schemes:</p>
+          <div className="flex flex-wrap gap-2">
+            {SCHEMES.map((s) => (
+              <span key={s.id} className="rounded-full border border-[#D4D4D2] px-3 py-1 text-xs text-[#4A4A4A]">
+                {s.name}
+              </span>
+            ))}
+          </div>
+        </section>
+
+        {/* Example questions */}
+        <section className="mb-8">
+          <p className="mb-3 text-sm text-[#6B6B6B]">Try asking:</p>
+          <div className="flex flex-wrap gap-2">
+            {EXAMPLES.map((ex) => (
+              <button
+                key={ex}
+                onClick={() => handleExample(ex)}
+                className="rounded-full border border-[#D4D4D2] px-3 py-1.5 text-xs text-[#4A4A4A] hover:border-[#1A1A1A] hover:text-[#1A1A1A] transition-colors cursor-pointer"
+              >
+                {ex}
+              </button>
+            ))}
+          </div>
+        </section>
+
+        {/* Input */}
+        <form onSubmit={handleSubmit} className="mb-8">
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Ask a factual question about a scheme..."
+              className="flex-1 rounded-lg border border-[#D4D4D2] bg-white px-4 py-3 text-sm outline-none focus:border-[#1A1A1A] transition-colors"
             />
-            Deploy Now
-          </a>
+            <button
+              type="submit"
+              disabled={loading || !query.trim()}
+              className="rounded-lg bg-[#1A1A1A] px-5 py-3 text-sm font-medium text-white disabled:opacity-40 cursor-pointer hover:bg-[#333] transition-colors"
+            >
+              {loading ? "..." : "Ask"}
+            </button>
+          </div>
+        </form>
+
+        {/* Response cards */}
+        {response && (
+          <div className="space-y-4">
+            {response.type === "answer" && <AnswerCard response={response} />}
+            {response.type === "refusal" && <RefusalCard response={response} />}
+            {response.type === "pii_block" && <PiiBlockCard />}
+            {response.type === "out_of_scope" && <OutofScopeCard response={response} />}
+            {response.type === "no_answer" && <NoAnswerCard response={response} />}
+            {response.type === "error" && <ErrorCard response={response} />}
+          </div>
+        )}
+      </main>
+    </div>
+  );
+}
+
+function AnswerCard({ response }: { response: QueryResponse }) {
+  return (
+    <div className="rounded-lg border border-[#D4D4D2] bg-white p-5">
+      <p className="mb-4 text-sm leading-relaxed">{response.answer}</p>
+      {response.source_url && (
+        <div className="flex items-center gap-2 text-xs text-[#6B6B6B]">
+          <span>Source:</span>
           <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
+            href={response.source_url}
             target="_blank"
             rel="noopener noreferrer"
+            className="text-[#2563EB] underline decoration-[#2563EB]/30 underline-offset-2 hover:decoration-[#2563EB] transition-colors"
           >
-            Documentation
+            {response.source_url.replace(/^https?:\/\//, "").split("/")[0]}
           </a>
+          {response.last_updated && (
+            <span className="ml-1">· Updated: {response.last_updated}</span>
+          )}
         </div>
-      </main>
+      )}
+    </div>
+  );
+}
+
+function RefusalCard({ response }: { response: QueryResponse }) {
+  return (
+    <div className="rounded-lg border border-[#E5D5A0] bg-[#FDF8ED] p-5">
+      <p className="mb-3 text-sm leading-relaxed text-[#6B5A2E]">{response.message}</p>
+      {response.source_url && (
+        <a
+          href={response.source_url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-xs text-[#2563EB] underline decoration-[#2563EB]/30 underline-offset-2 hover:decoration-[#2563EB] transition-colors"
+        >
+          Learn about mutual fund investing →
+        </a>
+      )}
+    </div>
+  );
+}
+
+function PiiBlockCard() {
+  return (
+    <div className="rounded-lg border border-[#E5A0A0] bg-[#FDF0F0] p-5">
+      <p className="text-sm font-medium text-[#8B3A3A] mb-1">Personal information detected</p>
+      <p className="text-sm text-[#6B4A4A]">
+        Your query was blocked. No personal data was stored or processed.
+      </p>
+    </div>
+  );
+}
+
+function OutofScopeCard({ response }: { response: QueryResponse }) {
+  return (
+    <div className="rounded-lg border border-[#D4D4D2] bg-white p-5">
+      <p className="text-sm leading-relaxed whitespace-pre-line">{response.message}</p>
+    </div>
+  );
+}
+
+function NoAnswerCard({ response }: { response: QueryResponse }) {
+  return (
+    <div className="rounded-lg border border-[#D4D4D2] bg-white p-5">
+      <p className="text-sm text-[#6B6B6B]">{response.message}</p>
+    </div>
+  );
+}
+
+function ErrorCard({ response }: { response: QueryResponse }) {
+  return (
+    <div className="rounded-lg border border-[#D4D4D2] bg-white p-5">
+      <p className="text-sm text-[#6B6B6B]">{response.message}</p>
     </div>
   );
 }
