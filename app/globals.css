@@ -1,19 +1,1 @@
 @import "tailwindcss";
-
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-
-:root {
-  --kuvera-bg: #FFFFFF;
-  --kuvera-text: #000000;
-  --kuvera-muted: #666666;
-  --kuvera-border: #E8E8E8;
-  --kuvera-surface: #F7F7F7;
-  --kuvera-accent: #00B86B;
-  --kuvera-error: #E53935;
-}
-
-body {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
