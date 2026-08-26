@@ -1,23 +1,20 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 
-type QueryResponse = {
-  type: string;
-  answer?: string;
+type Message = {
+  role: "user" | "assistant";
+  content: string;
+  type?: string;
   source_url?: string;
   last_updated?: string | null;
-  fact_type?: string;
-  scheme_id?: string;
-  message?: string;
-  scheme_name?: string;
 };
 
 const SCHEMES = [
-  { id: "top100", name: "HDFC Top 100 Fund" },
-  { id: "flexicap", name: "HDFC Flexi Cap Fund" },
-  { id: "elsstaxsaver", name: "HDFC ELSS Tax Saver" },
-  { id: "midcap", name: "HDFC Mid-Cap Opportunities Fund" },
+  "HDFC Top 100 Fund",
+  "HDFC Flexi Cap Fund",
+  "HDFC ELSS Tax Saver",
+  "HDFC Mid-Cap Opportunities Fund",
 ];
 
 const EXAMPLES = [
@@ -27,185 +24,248 @@ const EXAMPLES = [
 ];
 
 export default function Home() {
-  const [query, setQuery] = useState("");
-  const [response, setResponse] = useState<QueryResponse | null>(null);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const bottomRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!query.trim()) return;
+    const text = input.trim();
+    if (!text || loading) return;
 
+    const userMsg: Message = { role: "user", content: text };
+    setMessages((prev) => [...prev, userMsg]);
+    setInput("");
     setLoading(true);
-    setResponse(null);
 
     try {
       const res = await fetch("/api/query", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: query }),
+        body: JSON.stringify({ text }),
       });
       const data = await res.json();
-      setResponse(data);
+
+      let assistantContent = "";
+      if (data.type === "answer") {
+        assistantContent = data.answer;
+      } else if (data.type === "refusal") {
+        assistantContent = data.message;
+      } else if (data.type === "pii_block") {
+        assistantContent = data.message;
+      } else if (data.type === "out_of_scope") {
+        assistantContent = data.message;
+      } else if (data.type === "no_answer") {
+        assistantContent = data.message;
+      } else {
+        assistantContent = data.message || "Something went wrong.";
+      }
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content: assistantContent,
+          type: data.type,
+          source_url: data.source_url,
+          last_updated: data.last_updated,
+        },
+      ]);
     } catch {
-      setResponse({ type: "error", message: "Something went wrong. Please try again." });
+      setMessages((prev) => [
+        ...prev,
+        { role: "assistant", content: "Something went wrong. Please try again.", type: "error" },
+      ]);
     } finally {
       setLoading(false);
+      inputRef.current?.focus();
     }
   }
 
   function handleExample(example: string) {
-    setQuery(example);
-    setResponse(null);
+    setInput(example);
+    inputRef.current?.focus();
   }
 
   return (
-    <div className="min-h-screen bg-[#FAFAF8] text-[#1A1A1A]">
-      {/* Persistent header */}
-      <header className="border-b border-[#E5E5E3] bg-[#FAFAF8] px-4 py-4 sticky top-0 z-10">
-        <div className="mx-auto max-w-[640px]">
-          <h1 className="text-lg font-medium tracking-tight">MF-Facts</h1>
-          <p className="text-sm text-[#6B6B6B]">Facts-only. No investment advice.</p>
+    <div className="flex h-screen flex-col bg-[#FAFAF8] text-[#1A1A1A]">
+      {/* Header */}
+      <header className="shrink-0 border-b border-[#E5E5E3] bg-[#FAFAF8] px-4 py-3">
+        <div className="mx-auto flex max-w-[640px] items-baseline justify-between">
+          <div>
+            <h1 className="text-base font-semibold tracking-tight">MF-Facts</h1>
+            <p className="text-[11px] text-[#8A8A88]">Facts-only. No investment advice.</p>
+          </div>
+          <span className="text-[10px] text-[#ACACA8]">RAG-powered</span>
         </div>
       </header>
 
-      <main className="mx-auto max-w-[640px] px-4 py-8">
-        {/* Welcome */}
-        <section className="mb-8">
-          <p className="mb-3 text-sm text-[#6B6B6B]">Covering these schemes:</p>
-          <div className="flex flex-wrap gap-2">
-            {SCHEMES.map((s) => (
-              <span key={s.id} className="rounded-full border border-[#D4D4D2] px-3 py-1 text-xs text-[#4A4A4A]">
-                {s.name}
-              </span>
-            ))}
-          </div>
-        </section>
-
-        {/* Example questions */}
-        <section className="mb-8">
-          <p className="mb-3 text-sm text-[#6B6B6B]">Try asking:</p>
-          <div className="flex flex-wrap gap-2">
-            {EXAMPLES.map((ex) => (
-              <button
-                key={ex}
-                onClick={() => handleExample(ex)}
-                className="rounded-full border border-[#D4D4D2] px-3 py-1.5 text-xs text-[#4A4A4A] hover:border-[#1A1A1A] hover:text-[#1A1A1A] transition-colors cursor-pointer"
-              >
-                {ex}
-              </button>
-            ))}
-          </div>
-        </section>
-
-        {/* Input */}
-        <form onSubmit={handleSubmit} className="mb-8">
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Ask a factual question about a scheme..."
-              className="flex-1 rounded-lg border border-[#D4D4D2] bg-white px-4 py-3 text-sm outline-none focus:border-[#1A1A1A] transition-colors"
-            />
-            <button
-              type="submit"
-              disabled={loading || !query.trim()}
-              className="rounded-lg bg-[#1A1A1A] px-5 py-3 text-sm font-medium text-white disabled:opacity-40 cursor-pointer hover:bg-[#333] transition-colors"
-            >
-              {loading ? "..." : "Ask"}
-            </button>
-          </div>
-        </form>
-
-        {/* Response cards */}
-        {response && (
-          <div className="space-y-4">
-            {response.type === "answer" && <AnswerCard response={response} />}
-            {response.type === "refusal" && <RefusalCard response={response} />}
-            {response.type === "pii_block" && <PiiBlockCard />}
-            {response.type === "out_of_scope" && <OutofScopeCard response={response} />}
-            {response.type === "no_answer" && <NoAnswerCard response={response} />}
-            {response.type === "error" && <ErrorCard response={response} />}
-          </div>
-        )}
-      </main>
-    </div>
-  );
-}
-
-function AnswerCard({ response }: { response: QueryResponse }) {
-  return (
-    <div className="rounded-lg border border-[#D4D4D2] bg-white p-5">
-      <p className="mb-4 text-sm leading-relaxed">{response.answer}</p>
-      {response.source_url && (
-        <div className="flex items-center gap-2 text-xs text-[#6B6B6B]">
-          <span>Source:</span>
-          <a
-            href={response.source_url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-[#2563EB] underline decoration-[#2563EB]/30 underline-offset-2 hover:decoration-[#2563EB] transition-colors"
-          >
-            {response.source_url.replace(/^https?:\/\//, "").split("/")[0]}
-          </a>
-          {response.last_updated && (
-            <span className="ml-1">· Updated: {response.last_updated}</span>
+      {/* Messages */}
+      <main className="flex-1 overflow-y-auto">
+        <div className="mx-auto max-w-[640px] px-4 py-6">
+          {messages.length === 0 ? (
+            <EmptyState onExample={handleExample} />
+          ) : (
+            <div className="space-y-4">
+              {messages.map((msg, i) => (
+                <MessageBubble key={i} message={msg} />
+              ))}
+              {loading && (
+                <div className="flex justify-start">
+                  <div className="rounded-xl rounded-bl-sm border border-[#E5E5E3] bg-white px-4 py-3">
+                    <div className="flex items-center gap-1.5">
+                      <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#ACACA8]" />
+                      <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#ACACA8]" style={{ animationDelay: "0.15s" }} />
+                      <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#ACACA8]" style={{ animationDelay: "0.3s" }} />
+                    </div>
+                  </div>
+                </div>
+              )}
+              <div ref={bottomRef} />
+            </div>
           )}
         </div>
-      )}
+      </main>
+
+      {/* Input */}
+      <footer className="shrink-0 border-t border-[#E5E5E3] bg-[#FAFAF8] px-4 py-3">
+        <form onSubmit={handleSubmit} className="mx-auto flex max-w-[640px] gap-2">
+          <input
+            ref={inputRef}
+            type="text"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder="Ask about a scheme..."
+            disabled={loading}
+            className="flex-1 rounded-lg border border-[#D4D4D2] bg-white px-4 py-2.5 text-sm outline-none transition-colors placeholder:text-[#ACACA8] focus:border-[#1A1A1A] disabled:opacity-50"
+          />
+          <button
+            type="submit"
+            disabled={loading || !input.trim()}
+            className="shrink-0 rounded-lg bg-[#1A1A1A] px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-[#333] disabled:cursor-not-allowed disabled:opacity-30"
+          >
+            {loading ? (
+              <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+            ) : (
+              "Ask"
+            )}
+          </button>
+        </form>
+      </footer>
     </div>
   );
 }
 
-function RefusalCard({ response }: { response: QueryResponse }) {
+function EmptyState({ onExample }: { onExample: (q: string) => void }) {
   return (
-    <div className="rounded-lg border border-[#E5D5A0] bg-[#FDF8ED] p-5">
-      <p className="mb-3 text-sm leading-relaxed text-[#6B5A2E]">{response.message}</p>
-      {response.source_url && (
-        <a
-          href={response.source_url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-xs text-[#2563EB] underline decoration-[#2563EB]/30 underline-offset-2 hover:decoration-[#2563EB] transition-colors"
-        >
-          Learn about mutual fund investing →
-        </a>
-      )}
-    </div>
-  );
-}
-
-function PiiBlockCard() {
-  return (
-    <div className="rounded-lg border border-[#E5A0A0] bg-[#FDF0F0] p-5">
-      <p className="text-sm font-medium text-[#8B3A3A] mb-1">Personal information detected</p>
-      <p className="text-sm text-[#6B4A4A]">
-        Your query was blocked. No personal data was stored or processed.
+    <div className="flex flex-col items-center py-16 text-center">
+      <div className="mb-6 flex h-12 w-12 items-center justify-center rounded-full border border-[#E5E5E3] bg-white">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ACACA8" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="10" />
+          <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+          <line x1="12" y1="17" x2="12.01" y2="17" />
+        </svg>
+      </div>
+      <h2 className="mb-1 text-sm font-medium">MF-Facts</h2>
+      <p className="mb-6 max-w-[320px] text-xs leading-relaxed text-[#6B6B6B]">
+        Factual answers about HDFC mutual fund schemes, sourced from official AMC documentation.
       </p>
+
+      <div className="mb-6">
+        <p className="mb-2 text-[10px] uppercase tracking-wider text-[#ACACA8]">Covering</p>
+        <div className="flex flex-wrap justify-center gap-1.5">
+          {SCHEMES.map((s) => (
+            <span key={s} className="rounded-full border border-[#E5E5E3] bg-white px-2.5 py-1 text-[11px] text-[#4A4A4A]">
+              {s}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <p className="mb-2 text-[10px] uppercase tracking-wider text-[#ACACA8]">Try asking</p>
+        <div className="flex flex-col gap-1.5">
+          {EXAMPLES.map((ex) => (
+            <button
+              key={ex}
+              onClick={() => onExample(ex)}
+              className="rounded-lg border border-[#E5E5E3] bg-white px-3 py-2 text-left text-xs text-[#4A4A4A] transition-colors hover:border-[#1A1A1A] hover:text-[#1A1A1A] cursor-pointer"
+            >
+              {ex}
+            </button>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
 
-function OutofScopeCard({ response }: { response: QueryResponse }) {
-  return (
-    <div className="rounded-lg border border-[#D4D4D2] bg-white p-5">
-      <p className="text-sm leading-relaxed whitespace-pre-line">{response.message}</p>
-    </div>
-  );
-}
+function MessageBubble({ message }: { message: Message }) {
+  const isUser = message.role === "user";
 
-function NoAnswerCard({ response }: { response: QueryResponse }) {
   return (
-    <div className="rounded-lg border border-[#D4D4D2] bg-white p-5">
-      <p className="text-sm text-[#6B6B6B]">{response.message}</p>
-    </div>
-  );
-}
+    <div className={`flex ${isUser ? "justify-end" : "justify-start"}`}>
+      <div
+        className={`max-w-[85%] rounded-xl px-4 py-3 text-sm leading-relaxed ${
+          isUser
+            ? "rounded-br-sm bg-[#1A1A1A] text-white"
+            : "rounded-bl-sm border border-[#E5E5E3] bg-white text-[#1A1A1A]"
+        }`}
+      >
+        {/* PII block gets special styling */}
+        {message.type === "pii_block" && !isUser ? (
+          <div>
+            <p className="mb-1 font-medium text-[#8B3A3A]">Personal information detected</p>
+            <p className="text-[#6B4A4A]">{message.content}</p>
+          </div>
+        ) : (
+          <p className="whitespace-pre-line">{message.content}</p>
+        )}
 
-function ErrorCard({ response }: { response: QueryResponse }) {
-  return (
-    <div className="rounded-lg border border-[#D4D4D2] bg-white p-5">
-      <p className="text-sm text-[#6B6B6B]">{response.message}</p>
+        {/* Source link for answers */}
+        {!isUser && message.type === "answer" && message.source_url && (
+          <div className="mt-3 border-t border-[#F0F0EE] pt-2">
+            <a
+              href={message.source_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-[11px] text-[#2563EB] transition-colors hover:underline"
+            >
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                <polyline points="15 3 21 3 21 9" />
+                <line x1="10" y1="14" x2="21" y2="3" />
+              </svg>
+              {message.source_url.replace(/^https?:\/\//, "").split("/")[0]}
+            </a>
+          </div>
+        )}
+
+        {/* SEBI link for refusals */}
+        {!isUser && message.type === "refusal" && message.source_url && (
+          <div className="mt-3 border-t border-[#F0EFE3] pt-2">
+            <a
+              href={message.source_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-[11px] text-[#2563EB] transition-colors hover:underline"
+            >
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                <polyline points="15 3 21 3 21 9" />
+                <line x1="10" y1="14" x2="21" y2="3" />
+              </svg>
+              Learn about mutual fund investing
+            </a>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
