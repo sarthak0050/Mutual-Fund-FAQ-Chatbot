@@ -28,7 +28,7 @@ import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
-const LIVE_URL = 'https://mutual-fund-faq-chatbot.vercel.app';
+const LIVE_URL = 'https://mutual-fund-faq-chatbot-gold.vercel.app';
 const APP_MARKER = 'MF-Facts';
 
 const USER_AGENT =

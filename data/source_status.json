@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-30T13:46:55Z",
+  "generatedAt": "2026-09-30T13:57:19Z",
   "uniqueSources": 4,
   "rows": 21,
   "schemes": {
@@ -10,9 +10,9 @@
   },
   "staleAccessed": [],
   "site": {
-    "url": "https://mutual-fund-faq-chatbot.vercel.app",
+    "url": "https://mutual-fund-faq-chatbot-gold.vercel.app",
     "status": 200,
-    "markerFound": false
+    "markerFound": true
   },
   "sources": [
     {
@@ -22,7 +22,7 @@
       "ok": true,
       "bytes": 842838,
       "lastModified": "Fri, 17 May 2024 09:20:01 GMT",
-      "elapsedMs": 139,
+      "elapsedMs": 198,
       "digest": "ce3945c6e74953dd9723bb781bb6dc176ac9044c54dd85c9b9e174563bf532ad",
       "digestKind": "bytes",
       "change": "unchanged",
@@ -33,9 +33,9 @@
       "docType": "html",
       "status": 200,
       "ok": true,
-      "bytes": 185542,
+      "bytes": 185540,
       "lastModified": null,
-      "elapsedMs": 159,
+      "elapsedMs": 215,
       "digest": "74c3a274d947f943393e628c802e3e540bf31bfdcf42d94a63934ea8c0e409e6",
       "digestKind": "normalized",
       "change": "unchanged",
@@ -48,7 +48,7 @@
       "ok": true,
       "bytes": 168689,
       "lastModified": null,
-      "elapsedMs": 317,
+      "elapsedMs": 361,
       "digest": "3233ebb4b7e9d2b02c8f093f9124330ec771aa3f9a91e9a5d9a0bcfeec364eb9",
       "digestKind": "normalized",
       "change": "unchanged",
@@ -61,7 +61,7 @@
       "ok": true,
       "bytes": 408496,
       "lastModified": "Tue, 25 Feb 2025 08:17:30 GMT",
-      "elapsedMs": 35,
+      "elapsedMs": 36,
       "digest": "08162b4215fb478eae2f58e37158bddacc896b604760b75887a6b9b844ca465f",
       "digestKind": "bytes",
       "change": "unchanged",

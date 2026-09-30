@@ -4,7 +4,7 @@ A facts-only mutual fund information chatbot built with Retrieval-Augmented Gene
 
 ## Live Demo
 
-**Vercel URL:** [https://mutual-fund-faq-chatbot.vercel.app](https://mutual-fund-faq-chatbot.vercel.app)
+**Vercel URL:** [https://mutual-fund-faq-chatbot-gold.vercel.app](https://mutual-fund-faq-chatbot-gold.vercel.app)
 
 ## Scope
 
@@ -130,7 +130,7 @@ npx tsx scripts/scheduler.ts --mode daemon --interval-minutes 360
   CSRF tokens and cache-busters. HTML shifts are advisory notes, not failures.
 - **Access age** — sources whose `date_accessed` is older than
   `--max-age-days` (default 90) are listed for manual re-verification.
-- **Deployed site** — confirms `https://mutual-fund-faq-chatbot.vercel.app` is
+- **Deployed site** — confirms `https://mutual-fund-faq-chatbot-gold.vercel.app` is
   actually serving MF-Facts. This is an advisory warning, not a job failure.
 
 **Automation** — `.github/workflows/source-health.yml` runs every Tuesday at
