@@ -101,6 +101,50 @@ Open [http://localhost:3000](http://localhost:3000)
 7. **Citation** — source URL attached from database, not from LLM
 8. **Logging** — metadata only (no raw query text stored)
 
+## Source Health Scheduler
+
+Fund factsheets and scheme pages change. If a source silently starts returning
+an error page, the RAG index quietly serves wrong facts. A weekly job watches
+the sources so drift is noticed *before* the chatbot answers from stale data.
+
+```bash
+npm run schedule          # fetch every source, write the report
+npm run schedule:check    # verify only, no writes
+npx tsx scripts/scheduler.ts --mode daemon --interval-minutes 360
+```
+
+| Mode | Behaviour | Exit code |
+|---|---|---|
+| `check` | Report only. Flags unreachable sources and replaced PDFs. | `0` healthy · `2` drift found · `1` error |
+| `once` | Check, then write `data/source_status.json` + `docs/source-health.md` | `0` |
+| `daemon` | Loop every `--interval-minutes` | — |
+
+**What it checks**
+
+- **Every URL in `data/source_list.csv`** is fetched; HTTP status, size and
+  latency are recorded.
+- **PDF digests** are SHA-256 of the raw bytes — a `changed` verdict means the
+  document itself was replaced, so a re-ingest is due.
+- **HTML digests** are SHA-256 of a normalized copy (scripts, styles,
+  whitespace and long digit runs stripped) because live pages embed rotating
+  CSRF tokens and cache-busters. HTML shifts are advisory notes, not failures.
+- **Access age** — sources whose `date_accessed` is older than
+  `--max-age-days` (default 90) are listed for manual re-verification.
+- **Deployed site** — confirms `https://mutual-fund-faq-chatbot.vercel.app` is
+  actually serving MF-Facts. This is an advisory warning, not a job failure.
+
+**Automation** — `.github/workflows/source-health.yml` runs every Tuesday at
+06:00 UTC and on demand. It runs the check first, so a healthy week is a green
+no-op with no commit; when drift is found it rewrites the report and commits it.
+Re-ingesting is **opt-in** via the `ingest` input on a manual run, because
+`npm run ingest` needs the `DATABASE_URL` and `GEMINI_API_KEY` secrets. The
+check itself needs **no credentials**.
+
+```bash
+# Re-ingest after the report says a document changed
+npm run ingest
+```
+
 ## Known Limitations
 
 1. **Rate limits** — Gemini free tier allows 5 text generation requests/minute. Production use requires upgrading.
@@ -126,12 +170,20 @@ mf-facts/
 │   └── globals.css            # Tailwind imports
 ├── db/
 │   └── schema.sql             # Database tables + pgvector index
+├── lib/
+│   └── db.ts                  # Lazy cached Neon client (build-safe without DATABASE_URL)
 ├── scripts/
 │   ├── db-setup.ts            # Schema + seed runner
 │   ├── ingest.ts              # Ingestion pipeline
+│   ├── scheduler.ts           # Source health scheduler (check / once / daemon)
 │   └── check-logs.ts          # Query log viewer
 ├── data/
-│   └── source_list.csv        # Source document URLs
+│   ├── source_list.csv        # Source document URLs
+│   └── source_status.json     # Generated: last source check digests
+├── docs/
+│   └── source-health.md       # Generated: human-readable health report
+├── .github/workflows/
+│   └── source-health.yml      # Weekly source check
 └── .env.local                 # Secrets (not committed)
 ```
 

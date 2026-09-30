@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
-import { neon } from "@neondatabase/serverless";
 
-const sql = neon(process.env.DATABASE_URL!);
+import { getDb } from "@/lib/db";
 
 export async function GET() {
   try {
+    const sql = getDb();
     const sources = await sql`
       SELECT source_id, url, doc_type, scheme_id, date_accessed, source_last_updated
       FROM sources

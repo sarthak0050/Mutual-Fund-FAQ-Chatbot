@@ -1,0 +1,72 @@
+{
+  "generatedAt": "2026-09-30T13:46:55Z",
+  "uniqueSources": 4,
+  "rows": 21,
+  "schemes": {
+    "top100": 5,
+    "flexicap": 5,
+    "elsstaxsaver": 6,
+    "midcap": 5
+  },
+  "staleAccessed": [],
+  "site": {
+    "url": "https://mutual-fund-faq-chatbot.vercel.app",
+    "status": 200,
+    "markerFound": false
+  },
+  "sources": [
+    {
+      "url": "https://files.hdfcfund.com/s3fs-public/Others/2024-05/Fund%20Facts%20-%20HDFC%20Top%20100%20Fund_May%2024.pdf",
+      "docType": "pdf",
+      "status": 200,
+      "ok": true,
+      "bytes": 842838,
+      "lastModified": "Fri, 17 May 2024 09:20:01 GMT",
+      "elapsedMs": 139,
+      "digest": "ce3945c6e74953dd9723bb781bb6dc176ac9044c54dd85c9b9e174563bf532ad",
+      "digestKind": "bytes",
+      "change": "unchanged",
+      "error": null
+    },
+    {
+      "url": "https://www.hdfcfund.com/explore/mutual-funds/hdfc-flexi-cap-fund/regular",
+      "docType": "html",
+      "status": 200,
+      "ok": true,
+      "bytes": 185542,
+      "lastModified": null,
+      "elapsedMs": 159,
+      "digest": "74c3a274d947f943393e628c802e3e540bf31bfdcf42d94a63934ea8c0e409e6",
+      "digestKind": "normalized",
+      "change": "unchanged",
+      "error": null
+    },
+    {
+      "url": "https://www.hdfcfund.com/explore/mutual-funds/hdfc-elss-tax-saver/regular",
+      "docType": "html",
+      "status": 200,
+      "ok": true,
+      "bytes": 168689,
+      "lastModified": null,
+      "elapsedMs": 317,
+      "digest": "3233ebb4b7e9d2b02c8f093f9124330ec771aa3f9a91e9a5d9a0bcfeec364eb9",
+      "digestKind": "normalized",
+      "change": "unchanged",
+      "error": null
+    },
+    {
+      "url": "https://files.hdfcfund.com/s3fs-public/Others/2025-02/Fund%20Facts%20-%20HDFC%20Mid-Cap%20Opportunities%20Fund_Feb%2025.pdf",
+      "docType": "pdf",
+      "status": 200,
+      "ok": true,
+      "bytes": 408496,
+      "lastModified": "Tue, 25 Feb 2025 08:17:30 GMT",
+      "elapsedMs": 35,
+      "digest": "08162b4215fb478eae2f58e37158bddacc896b604760b75887a6b9b844ca465f",
+      "digestKind": "bytes",
+      "change": "unchanged",
+      "error": null
+    }
+  ],
+  "issues": []
+}

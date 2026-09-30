@@ -1,0 +1,87 @@
+name: Source health check
+
+# Watches the official HDFC sources listed in data/source_list.csv.
+#
+# 1. Fetches every source URL and compares it against the committed digests in
+#    data/source_status.json — flagging unreachable sources and replaced PDFs.
+# 2. Confirms the deployed site is actually serving MF-Facts (advisory warning;
+#    it does not fail the job).
+# 3. Commits data/source_status.json + docs/source-health.md only when the
+#    check found drift — a healthy week is a green no-op with no commit.
+#
+# No credentials are needed: every source is a public URL. Re-ingesting is
+# opt-in via the `ingest` input on a manual run, because it needs
+# DATABASE_URL and GEMINI_API_KEY.
+
+on:
+  schedule:
+    - cron: "0 6 * * 2" # Tuesdays, 06:00 UTC
+  workflow_dispatch:
+    inputs:
+      ingest:
+        description: "Re-ingest sources after the check (needs DATABASE_URL + GEMINI_API_KEY secrets)"
+        type: boolean
+        required: false
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: source-health
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check sources
+        id: check
+        continue-on-error: true
+        run: npm run schedule:check
+
+      # `check` exits 2 when a source is unreachable or a PDF changed; that is
+      # the only case where the report is rewritten.
+      - name: Refresh source report
+        if: steps.check.outcome == 'failure'
+        run: npm run schedule
+
+      - name: Commit updated report if changed
+        if: steps.check.outcome == 'failure'
+        run: |
+          git pull --rebase --autostash
+          if git diff --quiet -- data/source_status.json docs/source-health.md; then
+            echo "No report changes; nothing to commit."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/source_status.json docs/source-health.md
+          git commit -m "chore: refresh source health report ($(date -u +%Y-%m-%d))"
+          git push
+
+      - name: Re-ingest sources (opt-in)
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.ingest == 'true' }}
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          if [ -z "$DATABASE_URL" ] || [ -z "$GEMINI_API_KEY" ]; then
+            echo "DATABASE_URL and/or GEMINI_API_KEY secrets are not configured; skipping ingest."
+            echo "Add them under Settings -> Secrets and variables -> Actions."
+            exit 0
+          fi
+          npm run ingest

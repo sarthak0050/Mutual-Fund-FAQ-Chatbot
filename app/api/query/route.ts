@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import { neon } from "@neondatabase/serverless";
 
-const sql = neon(process.env.DATABASE_URL!);
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY!;
+import { getDb } from "@/lib/db";
+
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
 // --- PII Filter ---
 // Regex patterns for Indian PII: PAN, Aadhaar, phone, email, account numbers
@@ -113,6 +113,7 @@ export async function POST(request: Request) {
   const startTime = Date.now();
 
   try {
+    const sql = getDb();
     const body = await request.json();
     const query = body.text;
 

@@ -8,7 +8,9 @@
     "start": "next start",
     "lint": "eslint",
     "db:setup": "tsx scripts/db-setup.ts",
-    "ingest": "tsx scripts/ingest.ts"
+    "ingest": "tsx scripts/ingest.ts",
+    "schedule": "tsx scripts/scheduler.ts",
+    "schedule:check": "tsx scripts/scheduler.ts --mode check"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",
