@@ -5,6 +5,8 @@
 
 ## Full history (no tag, fewer than 30 commits)
 
+- 2026-10-02 `99e11c8` ci: attribute automated commits to the repo owner when PAT_TOKEN is set
+- 2026-10-02 `c6523cf` docs: add weekly changelog automation and initial CHANGELOG.md
 - 2026-09-30 `46195fb` fix: point live-site check at the real deployment
 - 2026-09-30 `7a674d3` feat: add weekly source health scheduler
 - 2026-08-27 `62c97ae` Revert UI to original version
